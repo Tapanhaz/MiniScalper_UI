@@ -1,4 +1,4 @@
-import sys,yaml,pyotp,threading,requests,configparser
+import sys,yaml,pyotp,threading,requests,configparser,time
 from NorenRestApiPy.NorenApi import  NorenApi
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QEvent
@@ -79,7 +79,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             
             self.login_window.installEventFilter(self)
 
-            self.ui_second_window.username.setText("")
+            self.ui_second_window.username.setText("Please Login")
             self.ui_second_window.login_stat.setText("")
 
             self.ui_second_window.btn_menu.setMenu(QtWidgets.QMenu(self.ui_second_window.btn_menu))
@@ -106,6 +106,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.ui_second_window.btn_menu.menu().addAction("Restore Defaults", self.default_settings)
 
             self.ui_second_window.btn_login.clicked.connect(self.ShoonyaLogin)
+            self.ui_second_window.btn_logout.clicked.connect(self.ShoonyaLogout)
 
             if self.sl_window is None:
                 self.sl_window = QtWidgets.QMainWindow()
@@ -421,7 +422,16 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             api.subscribe(f'NFO|{self.var_token}')
         else:
             self.lbl_strike.setText("Error !!")
-    
+
+    def first_update_var(self):
+        start_time = time.time()
+        while True:
+            if float(nifty_ltp) > 5000 and float(banknifty_ltp) > 5000:
+                #print("me start")
+                self.update_var_token()
+                break
+            if time.time() - start_time > 5: 
+                break 
      
 
     def load_expirylist(self):
@@ -464,6 +474,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         else:
             pass
         
+
     
     def liveprice(self):
         global api,nifty_ltp,banknifty_ltp
@@ -541,16 +552,28 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                         imei=cred['imei'])
         login_status=ret['stat']
         thread_liveprice = threading.Thread(target=self.liveprice, daemon=True)
+        thread_tokenupdate = threading.Thread(target = self.first_update_var)
 
         if ret['stat'] == 'Ok' :
             self.ui_second_window.username.setText(ret['uname'].split()[0])
             self.ui_second_window.login_stat.setText(ret['stat'])
             thread_liveprice.start()
+            thread_tokenupdate.start()
             
         else:
             self.ui_second_window.login_stat.setText('Error!!')
         return api
 
+    def ShoonyaLogout(self):
+        global api
+        ret=api.logout()
+        if ret['stat'] == 'Ok':
+            self.ui_second_window.username.setText("Logged Out")
+            self.ui_second_window.login_stat.setText(ret['stat'])
+        else:
+            self.ui_second_window.login_stat.setText('Error!!')
+
+        
     
 
 if __name__ == '__main__':
