@@ -1,0 +1,7 @@
+user        : 'user'
+pwd         : 'password'
+factor2     : '..'
+vc          : 'user_U'
+apikey    : 'api-secret'
+imei        : 'abc1234'
+token : 'totp'
