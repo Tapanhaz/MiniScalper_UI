@@ -383,20 +383,29 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         if strikepos == 'ATM':
             mystrike = atm_strike
         elif strikepos == "ITM" or strikepos == "OTM":
-            strikepos += "0"
-            pos = int(strikepos[-1]) + 1
-            if optype == "CE":
+            #strikepos += "0"
+            #pos = int(strikepos[-1]) + 1
+            if optype == "CE" and strikepos == "ITM":
                 middle_operand = "-"
-            elif optype == "PE":
+            elif optype == "CE" and strikepos == "OTM":
                 middle_operand = "+"
-            mystrike = eval(f"atm_strike {middle_operand} pos*strikediff")
+            elif optype == "PE" and strikepos == "ITM":
+                middle_operand = "+"
+            elif optype == "PE" and strikepos == "OTM":
+                middle_operand = "-"
+            mystrike = eval(f"atm_strike {middle_operand} strikediff")
             #print(mystrike)
         else:
+            striketype = strikepos[:3]
             pos = int(strikepos[-1]) + 1
-            if optype == "CE":
+            if optype == "CE" and striketype == "ITM":
                 middle_operand = "-"
-            elif optype == "PE":
+            elif optype == "CE" and striketype == "OTM":
                 middle_operand = "+"
+            elif optype == "PE" and striketype == "ITM":
+                middle_operand = "+"
+            elif optype == "PE" and striketype == "OTM":
+                middle_operand = "-"
             mystrike = eval(f"atm_strike {middle_operand} pos*strikediff")
             #print(mystrike)
         
