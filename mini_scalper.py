@@ -1,7 +1,7 @@
-import sys,yaml,pyotp,threading,requests,configparser,time
+import sys,yaml,pyotp,threading,requests,configparser,time,re
 from NorenRestApiPy.NorenApi import  NorenApi
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QEvent,QAbstractTableModel,Qt
 from time import sleep
 import pandas as pd, numpy as np
 from io import BytesIO
@@ -25,10 +25,14 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         self.btn_menu.clicked.connect(self.create_login_window)
         self.btn_exit.clicked.connect(self.close_windows)
         self.btn_minimize.clicked.connect(self.minimize_windows)
+        self.btn_buy.clicked.connect(self.place_order)
+        self.btn_sqoff.clicked.connect(self.exit_order)
 
         self.var_token = ""
         self.var_ltp = 0
-
+        self.ord_data = {}
+        self.pos_data = {}
+        
         # window position 
         self.login_window = None
         self.sl_window = None 
@@ -125,15 +129,41 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         else:
             self.login_window.show()
             self.sl_window.show()
+
+    class MyTableModel(QAbstractTableModel):
+        def __init__(self, data, columns):
+            QAbstractTableModel.__init__(self)
+            self._data = data
+            self._columns = columns
+
+        def rowCount(self, parent=None):
+            return self._data.shape[0]
+
+        def columnCount(self, parent=None):
+            return self._data.shape[1]
+
+        def data(self, index, role=Qt.DisplayRole):
+            if index.isValid():
+                if role == Qt.DisplayRole:
+                    return str(self._data.iat[index.row(), index.column()])
+            return None
+
+        def headerData(self, col, orientation, role):
+            if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+                return self._columns[col]
+            return None
+            
    
     def toggle_always_on_top(self):
         self.always_on_top = not self.always_on_top
         if self.always_on_top:
             self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
             self.login_window.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
+            self.sl_window.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         else:
             self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, False)
             self.login_window.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, False)
+            self.sl_window.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, False)
         self.show()
         self.login_window.show()
         self.sl_window.show()
@@ -360,8 +390,50 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.combo_side.setCurrentText(config['Settings']['side'])
             #self.combo_expiry.setCurrentText(config['Settings']['expiry'])
     
+    def place_order(self):
+        global api,ord_qty,trading_symbol,ord_no,ord_stat
+        ret = api.place_order(buy_or_sell='B', product_type='M',
+                        exchange='NFO', tradingsymbol=trading_symbol, 
+                        quantity=ord_qty, discloseqty=0,price_type='MKT',
+                        retention='IOC', remarks='my_order_001')
+                        # price=200.00, trigger_price=199.50,
+        ord_stat = ret['stat']
+        ord_no = ret['norenordno']
+        #self.lbl_ordstat.setText(ord_stat)
+        self.order_book()
+    
+    
+    def exit_order(self):
+        global api,ord_no,exit_ord_stat
+        ret = api.exit_order(ord_no,product_type='M')
+
+        exit_ord_stat = ret['stat']
+        self.lbl_ordstat.setText(exit_ord_stat)
+    
+
+    def order_book(self):
+        global api
+
+        self.ord_data = api.get_order_book()
+        #print(self.ord_data)
+        if self.ord_data is not None:
+            ord_df = pd.DataFrame(self.ord_data)
+            myord_df = ord_df[["tsym", "qty", "trantype", "prc", "status", "prctyp"]].copy()
+            myord_df['tsym'] = myord_df['tsym'].apply(lambda x: re.search("^(.)(\D+)(\d+)(\D+)(\d+)(\D+)(\d+)", x).group(1) + re.search("^(.)(\D+)(\d+)(\D+)(\d+)(\D+)(\d+)", x).group(7) + re.search("^(.)(\D+)(\d+)(\D+)(\d+)(\D+)(\d+)", x).group(6) if re.search("^(.)(\D+)(\d+)(\D+)(\d+)(\D+)(\d+)", x) is not None else '')
+            myord_df.rename(columns={'tsym': 'Strike', 'qty': 'Qty', 'trantype': 'Ord', 'prc': 'Prc', 'status': 'Status', 'prctyp': 'Prd. Typ.'}, inplace=True)
+            ord_model = self.MyTableModel(myord_df, myord_df.columns)
+            self.lbl_ordstat.setText(self.ord_data[0]['status'])
+            self.ui_second_window.table_ordbook.setModel(ord_model)
+            self.ui_second_window.table_ordbook.resizeColumnsToContents()
+
+        else:
+            pass
+        
+
+        
+    
     def update_var_token(self):
-        global ord_qty,nifty_ltp,banknifty_ltp,idx_df,api
+        global ord_qty,nifty_ltp,banknifty_ltp,idx_df,api,trading_symbol
 
         ticker=self.combo_ticker.currentText()
         strikepos=self.combo_strike.currentText()
@@ -413,6 +485,10 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         expiry_date = datetime.strptime(expiry, '%d-%b-%Y').strftime("%d%b%y").upper()
         
         trading_symbol=f"{ticker}{expiry_date}{optype[0]}{mystrike}"
+
+        #token_unsubscribe = threading.Thread(target=self.token_unsubscribe)
+        #nfo_token= self.var_token
+        #api.unsubscribe(f'NFO|{nfo_token}')
         
         
         if float(mystrike) > 10000 :
@@ -420,6 +496,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.lbl_strike.setText(str(mystrike))
             #print(self.var_token)
             api.subscribe(f'NFO|{self.var_token}')
+            #token_unsubscribe.start()
         else:
             self.lbl_strike.setText("Error !!")
 
@@ -432,7 +509,21 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                 break
             if time.time() - start_time > 5: 
                 break 
-     
+    
+    '''
+    def token_unsubscribe(self):
+        global feedJson,api
+        start_time = time.time()
+        while True:
+            keys = list(feedJson.keys())
+            for key in keys:
+                if key not in (self.banknifty, self.nifty, self.var_token):
+                    print(key)
+                    api.unsubscribe(f'NFO|{str(key)}')
+            break
+            if time.time() - start_time > 2: 
+                break 
+    '''        
 
     def load_expirylist(self):
         config = configparser.ConfigParser()
@@ -477,7 +568,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
 
     
     def liveprice(self):
-        global api,nifty_ltp,banknifty_ltp
+        global api,nifty_ltp,banknifty_ltp,banknifty,nifty,feedJson
         feed_opened = False
         feedJson = {}
         orderJson={}
@@ -516,12 +607,9 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         setup_websocket()
         api.subscribe(bnftoken)
         api.subscribe(nftoken)
-
-        
-        
-        #api.subscribe(f'NFO|{nfo_token}')
         
         while True:
+            #print(feedJson)
             
             if banknifty in feedJson:
                 self.lbl_banknifty.setText(str(feedJson[banknifty]['ltp']))
@@ -534,7 +622,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                 self.var_ltp=feedJson[str(self.var_token)]['ltp']
             sleep(.5)
 
-
+    
     def ShoonyaLogin(self):
         global api, login_status
         with open('cred.yml') as f:
@@ -559,20 +647,23 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.ui_second_window.login_stat.setText(ret['stat'])
             thread_liveprice.start()
             thread_tokenupdate.start()
+            self.order_book()
             
         else:
             self.ui_second_window.login_stat.setText('Error!!')
         return api
 
     def ShoonyaLogout(self):
-        global api
-        ret=api.logout()
-        if ret['stat'] == 'Ok':
-            self.ui_second_window.username.setText("Logged Out")
-            self.ui_second_window.login_stat.setText(ret['stat'])
+        global api, login_status
+        if login_status == 'Ok':
+            ret=api.logout()
+            if ret['stat'] == 'Ok':
+                self.ui_second_window.username.setText("Logged Out")
+                self.ui_second_window.login_stat.setText("$$$$$")
+            else:
+                self.ui_second_window.login_stat.setText('Error!!')
         else:
-            self.ui_second_window.login_stat.setText('Error!!')
-
+            self.ui_second_window.login_stat.setText('?????')
         
     
 
