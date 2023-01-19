@@ -30,8 +30,8 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
 
         self.var_token = ""
         self.var_ltp = 0
-        self.ord_data = {}
-        self.pos_data = {}
+        self.ord_data = None
+        self.pos_data = None
         
         # window position 
         self.login_window = None
