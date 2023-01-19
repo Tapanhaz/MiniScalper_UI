@@ -14,6 +14,9 @@ Things yet to be implemented :
 => MTM
 => Different Order Types
 
+
+N.B. - Use ui files from font type 2 folder if original files are not working properly..
 *** Please see issues first.. 
+
 
  
