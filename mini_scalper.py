@@ -61,7 +61,8 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         self.combo_side.addItems(['CE','PE'])
 
         self.load_settings()
-
+        
+        self.update_expiry = 'Enabled'
         ## Get combo values 
 
         self.combo_ticker.currentTextChanged.connect(self.update_var_token)
@@ -439,7 +440,12 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         strikepos=self.combo_strike.currentText()
         lots=self.combo_lots.currentText()
         optype=self.combo_side.currentText()
-        expiry=self.combo_expiry.currentText()
+        
+        if self.update_expiry == 'Enabled':
+            expiry=self.combo_expiry.currentText()
+        else:
+            expiry = np.sort(pd.to_datetime((idx_df[idx_df['Symbol']=='BANKNIFTY'])['Expiry'],format='%d-%b-%Y', errors='coerce').dt.date.unique())[0].strftime('%d-%b-%Y')
+        
         if ticker == 'NIFTY':
             lotsize=50
             strikediff=50
@@ -527,6 +533,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
 
     def load_expirylist(self):
         config = configparser.ConfigParser()
+        self.update_expiry = 'Disabled'
         config.read('expiry.ini')
         expiry_dates = config.items('Expiry')
         self.combo_expiry.clear()
@@ -536,6 +543,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         expiry_dates = [datetime.strptime(date[1], '%d-%b-%Y').date() for date in expiry_dates]
         closest_expiry_date = min(expiry_dates, key=lambda date: abs(date - current_date) if date >= current_date else timedelta.max)
         self.combo_expiry.setCurrentText(closest_expiry_date.strftime('%d-%b-%Y'))
+        self.update_expiry = 'Enabled'
 
     def get_expiry_dates(self):
         global api,idx_df
