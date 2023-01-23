@@ -353,7 +353,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             #self.login_window.setGeometry(geo)
             self.position_login_window()
             if self.sl_window:
-                #diff = event.pos() - event.oldPos()
+                #diff = event.pos() -  event.oldPos()
                 #geo = self.sl_window.geometry()
                 #geo.moveTopLeft(geo.topLeft() + diff)
                 #self.sl_window.setGeometry(geo)
