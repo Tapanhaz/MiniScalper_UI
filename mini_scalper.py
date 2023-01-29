@@ -507,6 +507,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.lbl_strike.setText("Error !!")
 
     def first_update_var(self):
+        global banknifty_ltp, nifty_ltp
         start_time = time.time()
         while True:
             if float(nifty_ltp) > 5000 and float(banknifty_ltp) > 5000:
