@@ -1137,60 +1137,6 @@ QLineEdit:read-only {
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item>
-           <widget class="QPushButton" name="btn_cnpnding">
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    color: white;
-    border-radius: 10px;
-    border-style: outset;
-    background: qlineargradient(spread:pad, x1:0.533682, y1:1, x2:0.505, y2:0, stop:0.0965909 rgba(178, 0, 0, 255), stop:0.193182 rgba(228, 121, 121, 232), stop:0.221591 rgba(200, 32, 32, 210), stop:0.477273 rgba(214, 66, 66, 255), stop:0.664773 rgba(196, 0, 0, 240), stop:0.943182 rgba(239, 173, 173, 255));
-    padding: 5px;
-    }
-
-QPushButton:hover {
-    background: qlineargradient(spread:pad, x1:0.483, y1:0, x2:0.534, y2:1, stop:0.267045 rgba(151, 93, 164, 254), stop:0.528409 rgba(199, 91, 205, 255), stop:0.806818 rgba(137, 27, 149, 255));
-    }
-
-QPushButton:pressed {
-    border-style: inset;
-    background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0.460227 rgba(30, 23, 93, 219), stop:0.852273 rgba(0, 28, 255, 227));
-    }</string>
-            </property>
-            <property name="text">
-             <string>Cancel
-All
-Pending</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="btn_exitpos">
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    color: white;
-    border-radius: 10px;
-    border-style: outset;
-    background: qlineargradient(spread:pad, x1:0.533682, y1:1, x2:0.505, y2:0, stop:0.0965909 rgba(178, 0, 0, 255), stop:0.193182 rgba(228, 121, 121, 232), stop:0.221591 rgba(200, 32, 32, 210), stop:0.477273 rgba(214, 66, 66, 255), stop:0.664773 rgba(196, 0, 0, 240), stop:0.943182 rgba(239, 173, 173, 255));
-    padding: 5px;
-    }
-
-QPushButton:hover {
-    background: qlineargradient(spread:pad, x1:0.483, y1:0, x2:0.534, y2:1, stop:0.267045 rgba(151, 93, 164, 254), stop:0.528409 rgba(199, 91, 205, 255), stop:0.806818 rgba(137, 27, 149, 255));
-    }
-
-QPushButton:pressed {
-    border-style: inset;
-    background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0.460227 rgba(30, 23, 93, 219), stop:0.852273 rgba(0, 28, 255, 227));
-    }</string>
-            </property>
-            <property name="text">
-             <string>Exit 
-All 
-Positions</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
