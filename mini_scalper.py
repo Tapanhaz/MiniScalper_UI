@@ -1,7 +1,9 @@
 import sys,yaml,pyotp,threading,requests,configparser,time,re
-from NorenRestApiPy.NorenApi import  NorenApi
+from NorenApi import  NorenApi
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QEvent,QAbstractTableModel,Qt
+from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtWidgets import QLineEdit
 from time import sleep
 import pandas as pd, numpy as np
 from io import BytesIO
@@ -61,15 +63,18 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         self.combo_side.addItems(['CE','PE'])
 
         self.load_settings()
-        
-        self.update_expiry = 'Enabled'
+
+        self.update_expiry='Enabled'
         ## Get combo values 
 
         self.combo_ticker.currentTextChanged.connect(self.update_var_token)
         self.combo_strike.currentTextChanged.connect(self.update_var_token)
         self.combo_lots.currentTextChanged.connect(self.update_var_token)
         self.combo_side.currentTextChanged.connect(self.update_var_token)
+        
         self.combo_expiry.currentTextChanged.connect(self.update_var_token)
+        
+        
     
     
     def create_login_window(self):
@@ -122,7 +127,60 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                 self.sl_window.show()
                 self.position_sl_window()
                 self.sl_window.installEventFilter(self)
-            
+
+                self.ql_ordtrig = self.sl_window.findChild(QLineEdit, 'ql_ordtrig')
+                self.ql_orddiff = self.sl_window.findChild(QLineEdit, 'ql_orddiff')
+                self.ql_ordlimit = self.sl_window.findChild(QLineEdit, 'ql_ordlimit')
+                self.ql_sltrig = self.sl_window.findChild(QLineEdit, 'ql_sltrig')
+                self.ql_sldiff = self.sl_window.findChild(QLineEdit, 'ql_sldiff')
+                self.ql_sllimit = self.sl_window.findChild(QLineEdit, 'ql_sllimit')
+                self.ql_tptrig = self.sl_window.findChild(QLineEdit, 'ql_tptrig')
+                self.ql_tpdiff = self.sl_window.findChild(QLineEdit, 'ql_tpdiff')
+                self.ql_tplimit = self.sl_window.findChild(QLineEdit, 'ql_tplimit')
+                self.ql_ordlimit.setReadOnly(True)
+                self.ql_sllimit.setReadOnly(True)
+                self.ql_tplimit.setReadOnly(True)
+
+                self.ql_sltrig.setReadOnly(True)
+                self.ql_sldiff.setReadOnly(True)
+                self.ql_tptrig.setReadOnly(True)
+                self.ql_tpdiff.setReadOnly(True)
+
+                #validate
+                text_validator = QDoubleValidator()
+                text_validator.setDecimals(2)
+                
+                self.ql_ordtrig.setValidator(text_validator)
+                self.ql_orddiff.setValidator(text_validator)
+                self.ql_sltrig.setValidator(text_validator)
+                self.ql_sldiff.setValidator(text_validator)
+                self.ql_tptrig.setValidator(text_validator)
+                self.ql_tpdiff.setValidator(text_validator)
+                
+                # Default Diff
+                self.ql_orddiff.setText("1")
+                self.ql_sldiff.setText("1")
+                self.ql_tpdiff.setText("1")
+
+                self.ql_ordtrig.textChanged.connect(self.calc_ordlimit)
+                self.ql_orddiff.textChanged.connect(self.calc_ordlimit)
+                self.ql_sltrig.textChanged.connect(self.calc_sllimit)
+                self.ql_sldiff.textChanged.connect(self.calc_sllimit)
+                self.ql_tptrig.textChanged.connect(self.calc_tplimit)
+                self.ql_tpdiff.textChanged.connect(self.calc_tplimit)
+
+                self.ql_sltrig.returnPressed.connect(self.handle_return_pressed)
+                self.ql_sldiff.returnPressed.connect(self.handle_return_pressed)
+                self.ql_tptrig.returnPressed.connect(self.handle_return_pressed)
+                self.ql_tpdiff.returnPressed.connect(self.handle_return_pressed)
+
+                self.ord_trig = 0
+                self.ord_limit = 0
+                self.sl_trig = 0
+                self.sl_limit = 0
+                self.tp_trig = 0
+                self.tp_limit = 0
+
 
         elif self.login_window.isVisible():
             self.login_window.hide()
@@ -353,11 +411,56 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             #self.login_window.setGeometry(geo)
             self.position_login_window()
             if self.sl_window:
-                #diff = event.pos() -  event.oldPos()
+                #diff = event.pos() - event.oldPos()
                 #geo = self.sl_window.geometry()
                 #geo.moveTopLeft(geo.topLeft() + diff)
                 #self.sl_window.setGeometry(geo)
                 self.position_sl_window()
+
+    def calc_ordlimit(self):
+        try:
+            trig = float(self.ql_ordtrig.text())
+        except ValueError:
+            trig = 0
+        try:
+            diff = float(self.ql_orddiff.text())
+        except ValueError:
+            diff = 0
+        limit = trig + diff
+        self.ql_ordlimit.setText(str(limit))
+
+    def calc_sllimit(self):
+        try:
+            trig = float(self.ql_sltrig.text())
+        except ValueError:
+            trig = 0
+        try:
+            diff = float(self.ql_sldiff.text())
+        except ValueError:
+            diff = 0
+        limit = trig - diff
+        self.ql_sllimit.setText(str(limit))
+
+    def calc_tplimit(self):
+        try:
+            trig = float(self.ql_tptrig.text())
+        except ValueError:
+            trig = 0
+        try:
+            diff = float(self.ql_tpdiff.text())
+        except ValueError:
+            diff = 0
+        limit = trig + diff
+        self.ql_tplimit.setText(str(limit))
+    
+    def handle_return_pressed(self):
+        sender = self.sender()
+        entered_text = sender.text()
+        print(f"Return pressed in {sender.objectName()}: {entered_text}")
+        # clear the text and remove focus
+        #if sender.objectName() == 'ql_sltrig':
+        sender.clearFocus()
+
 
     def default_settings(self):
         self.combo_ticker.setCurrentText("BANKNIFTY")
@@ -392,24 +495,42 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             #self.combo_expiry.setCurrentText(config['Settings']['expiry'])
     
     def place_order(self):
-        global api,ord_qty,trading_symbol,ord_no,ord_stat
+        global api,ord_qty,trading_symbol,ord_no,ord_stat,buy_qty,buy_symbol
+
+        if self.ql_ordtrig.text() != '':
+            self.ord_trig = float(self.ql_ordtrig.text())
+        if self.ql_ordlimit.text() != '':
+            self.ord_limit = float(self.ql_ordlimit.text()) 
+
         ret = api.place_order(buy_or_sell='B', product_type='M',
                         exchange='NFO', tradingsymbol=trading_symbol, 
-                        quantity=ord_qty, discloseqty=0,price_type='MKT',
-                        retention='IOC', remarks='my_order_001')
-                        # price=200.00, trigger_price=199.50,
+                        quantity=ord_qty, discloseqty=0,price_type='SL-LMT', price=self.ord_limit, trigger_price=self.ord_trig,
+                        retention='DAY', remarks='gui_ord')
+        #print(ret)
+                        
         ord_stat = ret['stat']
         ord_no = ret['norenordno']
+        buy_qty = ord_qty
+        buy_symbol = trading_symbol
         #self.lbl_ordstat.setText(ord_stat)
         self.order_book()
     
+
     
     def exit_order(self):
-        global api,ord_no,exit_ord_stat
-        ret = api.exit_order(ord_no,product_type='M')
+        global api,ord_no,exit_ord_stat,buy_symbol,buy_qty
+        #print(ord_no)
+        ret = api.place_order(buy_or_sell='S', product_type='M',
+                        exchange='NFO', tradingsymbol=buy_symbol, 
+                        quantity=buy_qty, discloseqty=0,price_type='MKT',
+                        retention='DAY', remarks='gui_exit')
+        #print(ret)
 
-        exit_ord_stat = ret['stat']
-        self.lbl_ordstat.setText(exit_ord_stat)
+        if ret is not None:
+            exit_ord_stat = ret['stat']
+            self.lbl_ordstat.setText(exit_ord_stat)
+        buy_qty = ''
+        buy_symbol = ''
     
 
     def order_book(self):
@@ -426,12 +547,11 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.lbl_ordstat.setText(self.ord_data[0]['status'])
             self.ui_second_window.table_ordbook.setModel(ord_model)
             self.ui_second_window.table_ordbook.resizeColumnsToContents()
+            self.ui_second_window.table_ordbook.resizeRowsToContents()
 
         else:
             pass
-        
-
-        
+     
     
     def update_var_token(self):
         global ord_qty,nifty_ltp,banknifty_ltp,idx_df,api,trading_symbol
@@ -440,12 +560,10 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         strikepos=self.combo_strike.currentText()
         lots=self.combo_lots.currentText()
         optype=self.combo_side.currentText()
-        
         if self.update_expiry == 'Enabled':
             expiry=self.combo_expiry.currentText()
         else:
             expiry = np.sort(pd.to_datetime((idx_df[idx_df['Symbol']=='BANKNIFTY'])['Expiry'],format='%d-%b-%Y', errors='coerce').dt.date.unique())[0].strftime('%d-%b-%Y')
-        
         if ticker == 'NIFTY':
             lotsize=50
             strikediff=50
@@ -571,13 +689,14 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                         with open('expiry.ini', 'w') as expiry_ini:
                             config.write(expiry_ini)
                         self.load_expirylist()
+                        
         else:
             pass
         
 
     
     def liveprice(self):
-        global api,nifty_ltp,banknifty_ltp,banknifty,nifty,feedJson
+        global api,nifty_ltp,banknifty_ltp,banknifty,nifty,feedJson,login_status
         feed_opened = False
         feedJson = {}
         orderJson={}
@@ -602,11 +721,14 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             global feed_opened
             feed_opened = True
 
+        
+
         def setup_websocket():
             global feed_opened,api
             api.start_websocket( order_update_callback=event_handler_order_update,
                                  subscribe_callback=event_handler_feed_update, 
-                                 socket_open_callback=open_callback)
+                                 socket_open_callback=open_callback,
+                                 socket_close_callback=self.close_callback)
             sleep(1)
             while(feed_opened==False):
 
@@ -616,10 +738,13 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         setup_websocket()
         api.subscribe(bnftoken)
         api.subscribe(nftoken)
+
+        #print(login_status)
         
         while True:
             #print(feedJson)
             
+                    
             if banknifty in feedJson:
                 self.lbl_banknifty.setText(str(feedJson[banknifty]['ltp']))
                 banknifty_ltp = feedJson[banknifty]['ltp']
@@ -630,7 +755,10 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                 self.lbl_ltp.setText(str(feedJson[str(self.var_token)]['ltp']))
                 self.var_ltp=feedJson[str(self.var_token)]['ltp']
             sleep(.5)
-
+           
+    def close_callback(self):
+            global feed_opened
+            feed_opened = False
     
     def ShoonyaLogin(self):
         global api, login_status
@@ -639,7 +767,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             #print(cred)
         class ShoonyaApiPy(NorenApi):
             def __init__(self):
-                NorenApi.__init__(self, host='https://api.shoonya.com/NorenWClientTP/', websocket='wss://api.shoonya.com/NorenWSTP/', eodhost='https://api.shoonya.com/chartApi/getdata/')
+                NorenApi.__init__(self, host='https://api.shoonya.com/NorenWClientTP/', websocket='wss://api.shoonya.com/NorenWSTP/')#, eodhost='https://api.shoonya.com/chartApi/getdata/')
         api = ShoonyaApiPy()
         ret = api.login(userid=cred['user'],
                         password=cred['pwd'],
@@ -647,11 +775,12 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                         vendor_code=cred['vc'],
                         api_secret=cred['apikey'],
                         imei=cred['imei'])
-        login_status=ret['stat']
+        #login_status=ret['stat']
         thread_liveprice = threading.Thread(target=self.liveprice, daemon=True)
         thread_tokenupdate = threading.Thread(target = self.first_update_var)
 
         if ret['stat'] == 'Ok' :
+            login_status = 'Logged In'
             self.ui_second_window.username.setText(ret['uname'].split()[0])
             self.ui_second_window.login_stat.setText(ret['stat'])
             thread_liveprice.start()
@@ -664,7 +793,8 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
 
     def ShoonyaLogout(self):
         global api, login_status
-        if login_status == 'Ok':
+        if login_status == 'Logged In':
+            self.close_callback()
             ret=api.logout()
             if ret['stat'] == 'Ok':
                 self.ui_second_window.username.setText("Logged Out")
@@ -677,12 +807,13 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
     
 
 if __name__ == '__main__':
-    global login_status, feed_opened, feedJson,api,nifty_ltp,banknifty_ltp,idx_df
-    login_status=""
+    global login_status, feed_opened, feedJson,api,nifty_ltp,banknifty_ltp,idx_df,buy_symbol,buy_qty,ord_no
+    login_status=buy_symbol=""
     feed_opened=False
     feedJson={}
-    nifty_ltp="0"
-    banknifty_ltp="0"
+    nifty_ltp=banknifty_ltp=buy_qty=ord_no="0"
+
+    
     idx_df=pd.read_csv('Index.csv')
     app = QtWidgets.QApplication(sys.argv)
     window = MiniScalper()
