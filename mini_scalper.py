@@ -1,5 +1,5 @@
 import sys,yaml,pyotp,threading,requests,configparser,time,re
-from NorenApi import  NorenApi
+from NorenRestApiPy.NorenApi import  NorenApi
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QEvent,QAbstractTableModel,Qt
 from PyQt5.QtGui import QDoubleValidator
@@ -13,8 +13,6 @@ from datetime import datetime, timedelta
 Ui_MainWindow, QtBaseClass = uic.loadUiType("main.ui")
 Ui_SecondWindow, _ = uic.loadUiType("sub.ui")
 Ui_ThirdWindow, _ = uic.loadUiType("sl.ui")
-
-
 
 class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdWindow):
     def __init__(self):
@@ -181,7 +179,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                 self.tp_trig = 0
                 self.tp_limit = 0
 
-
         elif self.login_window.isVisible():
             self.login_window.hide()
             self.sl_window.hide()
@@ -211,7 +208,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             if orientation == Qt.Horizontal and role == Qt.DisplayRole:
                 return self._columns[col]
             return None
-            
    
     def toggle_always_on_top(self):
         self.always_on_top = not self.always_on_top
@@ -322,7 +318,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
     """)
         
         self.transparency_slider.setVisible(True)
-        
         
     def eventFilter(self, object, event):
         if object == self.transparency_slider:
@@ -457,10 +452,8 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         sender = self.sender()
         entered_text = sender.text()
         print(f"Return pressed in {sender.objectName()}: {entered_text}")
-        # clear the text and remove focus
         #if sender.objectName() == 'ql_sltrig':
         sender.clearFocus()
-
 
     def default_settings(self):
         self.combo_ticker.setCurrentText("BANKNIFTY")
@@ -515,8 +508,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         #self.lbl_ordstat.setText(ord_stat)
         self.order_book()
     
-
-    
     def exit_order(self):
         global api,ord_no,exit_ord_stat,buy_symbol,buy_qty
         #print(ord_no)
@@ -531,7 +522,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
             self.lbl_ordstat.setText(exit_ord_stat)
         buy_qty = ''
         buy_symbol = ''
-    
 
     def order_book(self):
         global api
@@ -551,7 +541,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
 
         else:
             pass
-     
     
     def update_var_token(self):
         global ord_qty,nifty_ltp,banknifty_ltp,idx_df,api,trading_symbol
@@ -692,8 +681,6 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
                         
         else:
             pass
-        
-
     
     def liveprice(self):
         global api,nifty_ltp,banknifty_ltp,banknifty,nifty,feedJson,login_status
@@ -739,11 +726,9 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
         api.subscribe(bnftoken)
         api.subscribe(nftoken)
 
-        #print(login_status)
         
         while True:
             #print(feedJson)
-            
                     
             if banknifty in feedJson:
                 self.lbl_banknifty.setText(str(feedJson[banknifty]['ltp']))
@@ -812,7 +797,6 @@ if __name__ == '__main__':
     feed_opened=False
     feedJson={}
     nifty_ltp=banknifty_ltp=buy_qty=ord_no="0"
-
     
     idx_df=pd.read_csv('Index.csv')
     app = QtWidgets.QApplication(sys.argv)
