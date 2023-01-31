@@ -13,15 +13,20 @@ This ui is still under development. Contains 2-3 known bugs .
 
 => Orderbook Added
 
+=> Can Place Limit Order
+
 Things yet to be implemented :
 
 => Running Positions
+
 => MTM
+
 => Different Order Types
 
 
 N.B. - Use ui files from font type 2 folder if original files are not working properly..
 
+*** All buttons and sl/takeprofit will not work.. 
 
 *** Don't Use this tool for any kind of Buy Sell in Live Market . Its totally a experimental product only for educational purpose ..Please see issues first before running.. 
 
