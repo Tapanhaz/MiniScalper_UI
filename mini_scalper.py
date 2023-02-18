@@ -701,7 +701,7 @@ class MiniScalper(QtWidgets.QMainWindow, Ui_MainWindow,Ui_SecondWindow,Ui_ThirdW
 
         def event_handler_order_update(inmessage):
             if (('norenordno' in inmessage)&('status' in inmessage)):
-                orderJson[inmessage['norenordno']]={'status':float(inmessage['status'])} 
+                orderJson[inmessage['norenordno']]={'status':str(inmessage['status'])} 
 
 
         def open_callback():
