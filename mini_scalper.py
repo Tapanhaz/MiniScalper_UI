@@ -1,3 +1,10 @@
+'''
+            ::: description ::: Mini trading gui.. 
+            ::: author :::  Tapan Hazarika
+            ::: license :::  MIT
+'''
+__author__ = " Tapan Hazarika "
+
 import sys,yaml,pyotp,threading,requests,configparser,time,re
 from NorenRestApiPy.NorenApi import  NorenApi
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
